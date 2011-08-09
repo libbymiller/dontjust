@@ -148,10 +148,16 @@ function tweet_result(obj){
      screen_name.innerHTML="<a href=\"http://twitter.com/"+sn+"\">@"+sn+"</a>";
      if(tweeter_name){
        if(tweeter_name==sn){
-         log("Found an originator <a href=\"http://twitter.com/"+sn+"\">"+sn+"</a>");
-         originator.innerHTML="Originator tweet";
-         originator_colour.setAttribute("style","background:"+ok_colour);
-         orig=true;
+         if(obj["text"].match("RT ")){
+           originator_colour.setAttribute("style","background:orange");
+           originator.innerHTML="NOT originator tweet: we think this is an explicit RT";
+           log("We think this is an explicit RT");
+         }else{
+           log("Found an originator <a href=\"http://twitter.com/"+sn+"\">"+sn+"</a>");
+           originator.innerHTML="Originator tweet";
+           originator_colour.setAttribute("style","background:"+ok_colour);
+           orig=true;
+         }
        }else{
          originator_colour.setAttribute("style","background:orange");
          originator.innerHTML="NOT originator tweet: <br />\ntweet originator <a href=\"http://twitter.com/"+tweeter_name+"\">"+tweeter_name+"</a> is not <a href=\"http://twitter.com/"+sn+"\">"+sn+"</a>";
@@ -248,7 +254,9 @@ function search_results(obj){
     var l = Date.parse(lst);
     var minutes=1000*60;
     var hours=minutes*60;
-    velocity.innerHTML="Velocity (RT speed): "+((f - l)/minutes+" minutes");
+    var orig = (f - l)/minutes;
+    var rounded = Math.round(orig*10)/10;
+    velocity.innerHTML="Velocity (RT speed): "+rounded+" minutes";
     if(f-l/minutes < 30){//arbitrary
       vel_high=true;
       velocity_colour.setAttribute("style","background:orange");
