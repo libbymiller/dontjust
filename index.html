@@ -93,6 +93,8 @@ function insert(sc,id){
 function lookup_tweet(){
   var l = document.getElementById("log");
   l.innerHTML="";
+  var ur = document.getElementById("url");
+  ur.innerHTML="";
   var f = document.forms[0];
   var url = f.elements["tweet_url"].value;
   log("Looking up "+url);
@@ -192,7 +194,8 @@ function tweet_result(obj){
 // find any url
      if(obj["text"].match("http")){
        //try and look it up
-       var r = /(http.*?)[\s$]/; //basic
+//       var r = /(http.*?)[\s$]/; //basic
+       var r = /(http.*?).*?$/; //basic
 
        var arr = obj["text"].split("http");
        var count = 0;
@@ -200,14 +203,15 @@ function tweet_result(obj){
          if(count==0){
            var s = document.getElementById("supporting"); 
            s.innerHTML="<span>Supporting material found: </span><br />\n";
-         }
-         var m = r.exec("http"+arr[a]);
-         //var m2 = r2.exec(obj["text"]);
-         if(m && m[1] && m[1]!=""){
-          var u = m[1];
-          var lookup_url = "http://dev1.foaf.tv/2011/08/api/lookup?url="+u+"&callback=lookup";
-          log("Looking up "+lookup_url);
-          insert(lookup_url,"lookup_results_"+count)
+         }else{
+           var m = r.exec("http"+arr[a]);
+           if(m && m[0] && m[0]!="" && arr[a]!=""){
+            var u = m[0];
+            u = u.replace(/\s.*/,"");
+            var lookup_url = "http://dev1.foaf.tv/2011/08/api/lookup?url="+u+"&callback=lookup";
+            log("Looking up "+lookup_url);
+            insert(lookup_url,"lookup_results_"+count)
+           }
          }
          count = count+1;
        }
@@ -271,9 +275,11 @@ function lookup(obj){
      var title = obj["title"];
      var div = document.getElementById("supporting");
      var div_colour = document.getElementById("supporting_colour");
+
      if(url.match("yfrog") || url.match("twitpic") || 
-url.match("flickr") || url.match("tweetvid") || url.match("youtube")){
-console.log(div.children.size);
+url.match("flickr") || url.match("tweetvid") || url.match("youtube") || 
+url.match("imgur")){
+
        if(div.children.size && siv.children.size>0){
          div.innerHTML = "<span> - <a href='"+url+"'>"+title+"</a></span>";
        }else{
