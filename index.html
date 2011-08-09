@@ -1,0 +1,378 @@
+<html>
+<head>
+<title>
+Don't just Retweet
+</title>
+
+<style>
+body{
+  font-size:20;
+}
+
+.colour{
+  height:50;	
+  width:50;	
+  float:left;
+  margin:10px;
+}
+
+h2{
+  text-align:center;
+}
+
+.description{
+  height:50;	
+  #width:500;	
+  float:left;
+  margin:10px;
+}
+
+#form{ 
+  text-align:center;
+  margin-top:50;  
+}
+input{
+  height:50;	
+  font-size:30;
+}
+.button{
+  background:#dfdfdf;
+}
+#log{
+  list-style: none; 
+  margin:10px;
+  border: 3px dotted;
+}
+
+.about{
+  position:absolute;
+  top:10px;
+  right:50px;
+}
+
+#result{
+ width:50%;
+ float:left;
+ margin-top:50px;
+}
+
+.right_col{
+  float:right;
+  width:40%;
+}
+
+div{
+ margin:10px;
+}
+
+</style>
+<script type="text/javascript" id="tweet_result"></script>
+<script type="text/javascript" id="search_results"></script>
+<script type="text/javascript" id="lookup_results"></script>
+<script type="text/javascript" id="lookup_results2"></script>
+<script type="text/javascript">
+var tweeter_name;
+var orig=false;
+var rt_high=false;
+var vel_high=false;
+var sup=false;
+
+function insert(sc,id){
+   var newScript = document.createElement('script');
+   newScript.type = 'text/javascript';
+   newScript.src = sc;
+   newScript.id = id;
+   var el = document.getElementById(id); 
+   el.parentNode.replaceChild(newScript,el);
+}
+
+
+function lookup_tweet(){
+  var l = document.getElementById("log");
+  l.innerHTML="";
+  var f = document.forms[0];
+  var url = f.elements["tweet_url"].value;
+  //console.log(url);
+  log("Looking up "+url);
+  if(url && url!="" && url.match("://twitter.com")){
+    //console.log("ok[1]");
+    //substring for id
+
+    var r =  /\/(\d*)$/;
+    var r2 =  /.*\/(.*?)\/status\//;
+    //console.log("ok[2]");
+
+    var m = r.exec(url);
+    var m2 = r2.exec(url);
+    //console.log(m2);
+    //console.log("ok[3] "+m);
+
+    if(m && m[1] && m[1]!=""){
+      //get the json
+      var id = m[1];
+      log("found an ID "+id);
+
+//      var script = document.getElementById("tweet_result");
+      var api_url = "http://api.twitter.com/1/statuses/show/"+id+".json?callback=tweet_result";      
+      insert(api_url,"tweet_result")
+      log("Fetching "+api_url);
+//      script.removeAttribute("src");
+//      script.setAttribute("src",api_url);
+    }else{
+      log("Sorry - you need to use the URL for a tweet - find it linked on the time tweeted");
+    }
+    if(m2 && m2[1] && m2[1]!=""){
+      tweeter_name=m2[1];
+      log("Found a tweeter name for this tweet "+tweeter_name);
+    }
+  } 
+}
+
+function tweet_result(obj){
+   //console.log("result");
+   //console.log(obj);
+   var div = document.getElementById("result");
+   var div_colour = document.getElementById("result_colour");
+   var name = document.getElementById("name");
+   var screen_name = document.getElementById("screen_name");
+
+   var retweet_count = document.getElementById("retweet_count");
+   var retweet_count_colour = document.getElementById("retweet_count_colour");
+   var geo = document.getElementById("geo"); 
+   var img = document.getElementById("img"); 
+   var place = document.getElementById("place"); 
+   var originator = document.getElementById("originator"); 
+   var originator_colour = document.getElementById("originator_colour"); 
+
+   if(obj["user"]["name"]){
+     name.innerHTML="<h4>"+obj["user"]["name"]+"</h4>";
+   }
+
+   if(obj["user"]["screen_name"]){
+     var sn = obj["user"]["screen_name"];
+     screen_name.innerHTML="<a href=\"http://twitter.com/"+sn+"\">@"+sn+"</a>";
+     if(tweeter_name){
+       if(tweeter_name==sn){
+         log("Found an originator <a href=\"http://twitter.com/"+sn+"\">"+sn+"</a>");
+         originator.innerHTML="Originator tweet";
+         originator_colour.setAttribute("style","background:green");
+         orig=true;
+       }else{
+         originator_colour.setAttribute("style","background:orange");
+         originator.innerHTML="NOT originator tweet: <br />\ntweet originator <a href=\"http://twitter.com/"+tweeter_name+"\">"+tweeter_name+"</a> is not <a href=\"http://twitter.com/"+sn+"\">"+sn+"</a>";
+         log("Tweet originator <a href=\"http://twitter.com/"+tweeter_name+"\">"+tweeter_name+"</a> differs from <a href=\"http://twitter.com/"+sn+"\">"+sn+"</a>");
+       }
+     }
+     
+   }
+
+   if(obj["retweet_count"]){
+     retweet_count.innerHTML="Retweets "+obj["retweet_count"];
+     if(obj["retweet_count"]>5){//arbitrary
+      rt_high=true;
+      retweet_count_colour.setAttribute("style","background:orange");
+      log("Retweet count is high - "+obj["retweet_count"]+" - could be a sign of hysteria or lack of checking");
+     }else{
+      retweet_count_colour.setAttribute("style","background:green");
+      log("Retweet count is low "+obj["retweet_count"]);
+     }
+   }else{
+      retweet_count_colour.setAttribute("style","background:green");
+      retweet_count.innerHTML = "No retweets";
+      log("Retweet count is zero");
+   }
+
+   if(obj["geo"]){
+     geo.innerHTML=obj["geo"]["coordinates"][0]+" "+obj["geo"]["coordinates"][1];
+   }
+
+   if(obj["place"]){
+     place.innerHTML=obj["place"]["name"];
+   }
+
+   if(obj["user"]["profile_image_url"]){
+     img.innerHTML="<img src=\""+obj["user"]["profile_image_url"]+"\" width=\"100\" />";
+   }
+
+   if(obj["text"]){
+     text.innerHTML=obj["text"];
+// find any url
+     //console.log(obj["text"]+"...");
+     if(obj["text"].match("http")){
+       //try and look it up
+       var r = /(http.*)$/; //basic
+       var r2 = /(http.*?)\s/; //basic
+       var m = r.exec(obj["text"]);
+       var m2 = r2.exec(obj["text"]);
+
+       if(m && m[1] && m[1]!=""){
+        var u = m[1];
+        //console.log("url is "+u);//look it up at this point
+        var lookup_url = "http://dev1.foaf.tv/2011/08/api/lookup?url="+u+"&callback=lookup";
+        log("Looking up "+lookup_url);
+        insert(lookup_url,"lookup_results")
+       }
+       if(m2 && m2[1] && m2[1]!=""){
+          var u = m2[1];
+          //console.log("url is "+u);//look it up at this point
+          var lookup_url = "http://dev1.foaf.tv/2011/08/api/lookup?url="+u+"&callback=lookup";
+          log("Looking up "+lookup_url);
+          insert(lookup_url,"lookup_results2")
+       }
+     }else{
+       var div = document.getElementById("supporting");
+       var div_colour = document.getElementById("supporting_colour");
+       div.innerHTML = "No supporting materials";
+       div_colour.setAttribute("style","background:orange");
+     }
+//now see if we can search for this
+     var arr = obj["text"].split(" ");
+     var arr2 = arr.slice(0,9);
+     //console.log(arr2);
+     var search_string = arr2.join(" ");
+     //console.log(search_string);
+     var search_url="http://search.twitter.com/search.json?q="+escape(search_string)+"&result_type=mixed&callback=search_results";
+     //console.log(search_url);
+     log("Doing a search for the phrase '<em>"+search_string+"</em>' to see if it's commonly retweeted and how fast");
+     //var script = document.getElementById("search_results");
+     //script.removeAttribute("src");
+     //script.setAttribute("src",search_url);
+     insert(search_url,"search_results")
+     //console.log("search url "+search_url);
+
+   }
+   
+
+}
+
+
+function search_results(obj){
+  //console.log("search results");   
+  //console.log(obj);   
+  var num = obj["results"].length;
+  var velocity = document.getElementById("velocity");
+  var velocity_colour = document.getElementById("velocity_colour");
+
+  if(num>0){
+
+    var fst = obj["results"][0]["created_at"]
+    var lst = obj["results"][num-1]["created_at"]
+    var f = Date.parse(fst);
+    var l = Date.parse(lst);
+    var minutes=1000*60;
+    var hours=minutes*60;
+    velocity.innerHTML="Velocity (RT speed): "+((f - l)/minutes+" minutes");
+    if(f-l/minutes < 30){//arbitrary
+      vel_high=true;
+      velocity_colour.setAttribute("style","background:orange");
+      log("Velocity (RT speed) is quite high - this is getting retweeted very fast");
+    }else{
+      velocity_colour.setAttribute("style","background:green");
+      log("Velocity (RT speed) is quite low");
+    }
+  }else{
+    velocity.innerHTML="Velocity: 0";
+    velocity_colour.setAttribute("style","background:green");
+    log("Velocity (RT speed) is zero");
+  }
+
+  //console.log("velocity is "+l+"-"+f);
+
+}
+
+
+
+function lookup(obj){
+   //console.log("XXXX");
+   //console.log(obj);
+   if(obj && obj["url"]){
+     var url = obj["url"];
+     var u_div = document.getElementById("url");
+     var title = obj["title"];
+     u_div.innerHTML="<a href=\""+url+"\">"+title+"</a>";
+     var div = document.getElementById("supporting");
+     var div_colour = document.getElementById("supporting_colour");
+     if(url.match("yfrog") || url.match("twitpic") || 
+url.match("flickr") || url.match("tweetvid") || url.match("youtube")){
+
+       div.innerHTML = "Supporting material found<br />\n - <a href='"+url+"'>please watch before retweeting</a>";
+
+       sup = true;
+       div_colour.setAttribute("style","background:green");
+       log("Found a url with yfrog, twitpic, flickr, tweetvid or youtube attached - we're calling that evidence <a href=\""+url+"\">"+title+"</a>");
+     }else{
+       div.innerHTML = "No supporting materials";
+       div_colour.setAttribute("style","background:orange");
+       log("No supporting materials - no primary evidence");
+     }
+     
+   }
+}
+
+function log(text){
+    var log = document.getElementById("log");
+//    log_ch=log.children[0];
+//    newElement = document.createElement('p');
+  //  newElement.innerHTML=text;
+    //log.parentNode.insertBefore(newElement, log);
+
+    var li = document.createElement('li');
+    li.innerHTML=text;
+    log.insertBefore(li, log.firstChild);
+
+}
+
+</script>
+</head>
+
+<body>
+<h2>Enter a tweet link to see if we think it's worth retweeting</h2>
+<div class="about"><a href="about.html">about</a></div>
+<div id="form">
+
+<form onsubmit="lookup_tweet();return false;" id="tweet">
+ <input type ="text" name="tweet_url" value = "http://twitter.com/#!/libbymiller/status/100898044517695488" size="60"/>
+ <input type ="submit" name="go" value="go" class="button"/>
+</form>
+
+
+</div>
+
+
+<div id="result">
+
+   <div id="retweet_count_colour" class="colour"></div>
+   <div id="retweet_count" class="description"></div>
+   <br clear="both"/>
+
+   <div id="velocity_colour" class="colour"></div>
+   <div id="velocity"  class="description"></div>
+   <br clear="both"/>
+
+   <div id="supporting_colour" class="colour"></div>
+   <div id="supporting"  class="description"></div>
+   <br clear="both"/>
+
+   <div id="originator_colour" class="colour"></div>
+   <div id="originator"  class="description"></div>
+   <br clear="both"/>
+</div>
+
+ <div class="right_col">
+   <div id="name"></div><div id="screen_name"></div>
+   <div id="img"></div>
+   <div id="geo"></div>
+   <div id="place"></div>
+   <div id="text"></div>
+   <div id="url"></div>
+ </div>
+
+
+   <br clear="both"/>
+
+<h3>Log</h3>
+<ul id="log">
+</ul>
+
+</body>
+</html>
